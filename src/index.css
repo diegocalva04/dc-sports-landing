@@ -1,0 +1,74 @@
+/* Reset básico */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-primary: #E63946;
+  --color-secondary: #1D3557;
+  --color-background: #F1FAEE;
+  --color-light-gray: #F0F0F0;
+  --color-text: #1A1A1A;
+  --font-heading: 'Montserrat', sans-serif;
+  --font-body: 'Open Sans', sans-serif;
+  --transition-speed: 0.3s;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background-color: var(--color-background);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--color-secondary);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.cta-button {
+  display: inline-block;
+  background-color: var(--color-primary);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background-color var(--transition-speed), transform var(--transition-speed);
+  border: none;
+  cursor: pointer;
+}
+
+.cta-button:hover {
+  background-color: #c1121f;
+  transform: translateY(-2px);
+}
+
+.section-padding {
+  padding: 4rem 2rem;
+}
+
+/* Clases para animaciones de scroll (las usaremos luego) */
+.hidden {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.show {
+  opacity: 1;
+  transform: translateY(0);
+}
