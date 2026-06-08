@@ -53,7 +53,7 @@ export default function App() {
       
       <section id="hero">
         <HeroSection
-          title="Supera tus límites"
+          title="Supera tus límites ahorrando"
           subtitle="Equipamiento deportivo de alto rendimiento. Diseñado para los campeones."
           ctaText="Explorar colección"
           ctaLink="#productos-destacados"
