@@ -1,19 +1,11 @@
-import { useScrollAnimation } from './hooks/useScrollAnimation';
+import React from 'react';
+import { Navbar } from './components/Navbar';
 import { HeroSection } from './sections/HeroSection';
 import { FeaturedProductsSection } from './sections/FeaturedProductsSection';
 import { AboutSection } from './sections/AboutSection';
 import { TestimonialsSection } from './sections/TestimonialsSection';
 import { ContactSection } from './sections/ContactSection';
 import { FooterSection } from './sections/FooterSection';
-
-// Datos de DC Sport's (pueden venir de una API, pero los hardcodeamos para el ejemplo)
-const hero = new HeroSection(
-  'DC Sport\'s',
-  'Equipamiento deportivo de alto rendimiento. Supera tus límites.',
-  'Explorar productos',
-  '#productos-destacados',
-  'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80'
-);
 
 const products = [
   {
@@ -54,80 +46,73 @@ const products = [
   }
 ];
 
-const featuredProducts = new FeaturedProductsSection('Productos Destacados', products);
-
-const about = new AboutSection(
-  'Sobre DC Sport\'s',
-  [
-    'DC Sport\'s nació de la pasión por el deporte y el deseo de equipar a atletas de todos los niveles con lo mejor. Fundada en 2015, nos hemos consolidado como líderes en innovación deportiva.',
-    'Nuestra misión es inspirar a cada persona a moverse, romper barreras y alcanzar su máximo potencial. Trabajamos con materiales de primera calidad y diseño ergonómico para que tu rendimiento no tenga límites.'
-  ],
-  'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=500&auto=format'
-);
-
-const testimonials = new TestimonialsSection(
-  'Lo que dicen nuestros clientes',
-  [
-    { quote: 'Desde que uso las zapatillas DC Sport\'s, mis tiempos mejoraron un 15%. Increíble calidad.', author: 'Carlos Méndez', role: 'Maratonista' },
-    { quote: 'La atención al cliente es excelente y los productos llegaron antes de lo esperado. Recomiendo 100%.', author: 'Ana Gómez', role: 'Entrenadora personal' },
-    { quote: 'La mochila es perfecta para el gym y la oficina. Resistente y con diseño inteligente.', author: 'Luis Fernández', role: 'Crossfitter' }
-  ]
-);
-
-const contact = new ContactSection(
-  'Contáctanos',
-  '¿Tienes dudas o sugerencias? Escríbenos y te responderemos en menos de 24 horas.',
-  [] // Se podrían definir campos dinámicos, pero usamos un formulario fijo
-);
-
-const footer = new FooterSection(
-  'DC Sport\'s',
-  [
-    { text: 'Inicio', href: '#hero' },
-    { text: 'Productos', href: '#productos-destacados' },
-    { text: 'Nosotros', href: '#sobre-nosotros' },
-    { text: 'Contacto', href: '#contacto' }
-  ],
-  [
-    { name: 'Facebook', url: '#', icon: 'FB' },
-    { name: 'Instagram', url: '#', icon: 'IG' },
-    { name: 'Twitter', url: '#', icon: 'TW' }
-  ]
-);
-
-// Arreglo polimórfico: todas las secciones son tratadas como Section
-const sections = [hero, featuredProducts, about, testimonials, contact, footer];
-
-function App() {
+export default function App() {
   return (
     <div className="App">
-      {/* Cada sección es renderizada sin importar su tipo concreto */}
-      {sections.map((section, index) => {
-        // Para aplicar animación a todas las secciones excepto el footer (o la que se prefiera)
-        if (section instanceof FooterSection) {
-          return <div key={index}>{section.render()}</div>;
-        }
-        // Para el Hero no necesita animación de scroll, pero podemos aplicarle si queremos; 
-        // lo mostramos directamente.
-        if (section instanceof HeroSection) {
-          return <div key={index}>{section.render()}</div>;
-        }
-        // El resto de secciones tendrán animación con el hook
-        return <AnimatedSection key={index} section={section} />;
-      })}
+      <Navbar />
+      
+      <section id="hero">
+        <HeroSection
+          title="Supera tus límites"
+          subtitle="Equipamiento deportivo de alto rendimiento. Diseñado para los campeones."
+          ctaText="Explorar colección"
+          ctaLink="#productos-destacados"
+          backgroundImage="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80"
+        />
+      </section>
+
+      <section id="productos-destacados">
+        <div style={{ paddingTop: '2rem' }}>
+          <FeaturedProductsSection
+            title="Colección Premium"
+            products={products}
+          />
+        </div>
+      </section>
+
+      <section id="sobre-nosotros">
+        <AboutSection
+          title="Nuestra Misión"
+          paragraphs={[
+            'DC Sport\'s nació de la pasión por el deporte y el deseo de equipar a atletas de todos los niveles con lo mejor. Desde 2015, somos líderes en innovación deportiva, combinando tecnología, diseño y rendimiento.',
+            'Cada producto es creado con precisión para que los deportistas puedan alcanzar su máximo potencial. Creemos que el equipamiento adecuado hace la diferencia entre buenos y grandes atletas.'
+          ]}
+          imageUrl="https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=500&auto=format"
+        />
+      </section>
+
+      <section>
+        <TestimonialsSection
+          title="Historias de nuestros atletas"
+          testimonials={[
+            { quote: 'Desde que uso los productos de DC Sport\'s, mis tiempos mejoraron un 15%. La calidad es incomparable.', author: 'Carlos Méndez', role: 'Atleta Olímpico' },
+            { quote: 'El servicio al cliente es excepcional y los productos llegan rápido. Definitivamente recomiendo.', author: 'Ana Gómez', role: 'Entrenadora' },
+            { quote: 'Perfecto para el gym y entrenamientos intensos. Resisten cualquier desafío.', author: 'Luis Fernández', role: 'CrossFit Athlete' }
+          ]}
+        />
+      </section>
+
+      <section id="contacto">
+        <ContactSection
+          title="Contáctanos"
+          description="¿Dudas? Nuestro equipo está listo para ayudarte. Responderemos en menos de 24 horas."
+        />
+      </section>
+
+      <FooterSection
+        title="DC SPORT'S"
+        links={[
+          { text: 'Inicio', href: '#hero' },
+          { text: 'Productos', href: '#productos-destacados' },
+          { text: 'Sobre Nosotros', href: '#sobre-nosotros' },
+          { text: 'Contacto', href: '#contacto' }
+        ]}
+        socialLinks={[
+          { name: 'Facebook', url: 'https://facebook.com/dcsports', icon: 'f' },
+          { name: 'Instagram', url: 'https://instagram.com/dcsports', icon: 'ig' },
+          { name: 'Twitter', url: 'https://twitter.com/dcsports', icon: '𝕏' }
+        ]}
+      />
     </div>
   );
 }
-
-// Componente helper para aplicar la animación a una sección genérica
-function AnimatedSection({ section }) {
-  const ref = useScrollAnimation('hidden', 'show');
-
-  return (
-    <div ref={ref} className="hidden">
-      {section.render()}
-    </div>
-  );
-}
-
-export default App;
