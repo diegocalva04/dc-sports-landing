@@ -54,7 +54,7 @@ export default function App() {
       <section id="hero">
         <HeroSection
           title="Supera tus límites con DC Sport's"
-          subtitle="Equipamiento deportivo de alto rendimiento. Diseñado para los campeones."
+          subtitle="Equipamiento deportivo de alto rendimiento. Diseñado para los campeones del Ecaudor."
           ctaText="Explorar colección"
           ctaLink="#productos-destacados"
           backgroundImage="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80"
