@@ -124,7 +124,7 @@ export function ContactSection({ title, description, onSubmit }) {
           {status === 'sending' ? 'Enviando...' : 'Enviar mensaje'}
         </button>
         {status === 'sent' && (
-          <p className="form-status success">Mensaje enviado al backend FastAPI.</p>
+          <p className="form-status success">Mensaje enviado correctamente</p>
         )}
         {status === 'error' && (
           <p className="form-status error">{errorMessage}</p>
