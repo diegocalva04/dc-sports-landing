@@ -2,11 +2,14 @@ substitutions:
   _REGION: us-central1
   _SERVICE_NAME: dc-sports-landing
   _AR_REPOSITORY: cloud-run
+  _VITE_API_BASE_URL: ""
 
 steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - build
+      - --build-arg
+      - VITE_API_BASE_URL=${_VITE_API_BASE_URL}
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA
       - -t

@@ -17,6 +17,8 @@ backend/.venv
 backend/.venv313
 backend/.deps
 backend/.pip-tmp
+__pycache__
+*.pyc
 dist-ssr
 *.local
 

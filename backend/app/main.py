@@ -28,6 +28,7 @@ app.add_middleware(
 class Product(BaseModel):
     id: int
     name: str
+    image: str
     price: str
     description: str
     category: str
@@ -49,6 +50,7 @@ PRODUCTS = [
     Product(
         id=1,
         name="Zapatillas Running Pro",
+        image="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format",
         price="$129.99",
         description="Maxima amortiguacion y ligereza para tus carreras.",
         category="running",
@@ -56,6 +58,7 @@ PRODUCTS = [
     Product(
         id=2,
         name="Camiseta Dry-Fit",
+        image="https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&auto=format",
         price="$39.99",
         description="Transpirable y de secado rapido para entrenamientos intensos.",
         category="training",
@@ -63,6 +66,7 @@ PRODUCTS = [
     Product(
         id=3,
         name="Mochila Deportiva 30L",
+        image="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&auto=format",
         price="$59.99",
         description="Compartimentos para calzado, ropa y accesorios.",
         category="accessories",

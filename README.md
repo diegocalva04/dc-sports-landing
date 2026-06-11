@@ -46,6 +46,15 @@ Required GitHub Actions secrets for the AWS backend:
 The AWS user behind those keys must be allowed to manage Lambda functions, IAM
 roles for Lambda, and CloudWatch logs.
 
+To connect the deployed frontend with this backend, add this GitHub Actions
+secret to the repository:
+
+- `VITE_API_BASE_URL`: the public AWS Lambda Function URL printed by the AWS
+  backend workflow.
+
+After setting `VITE_API_BASE_URL`, run the Cloud Run frontend workflow again so
+the React build includes the backend URL.
+
 ## Deploy to Google Cloud Run
 
 This repository is ready to deploy as a container to Cloud Run. The included
