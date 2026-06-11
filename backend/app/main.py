@@ -42,7 +42,7 @@ class Product(BaseModel):
 class ContactRequest(BaseModel):
     name: Annotated[str, Field(min_length=2, max_length=80)]
     email: EmailStr
-    message: Annotated[str, Field(min_length=10, max_length=1000)]
+    message: Annotated[str, Field(min_length=2, max_length=1000)]
 
 
 class ContactResponse(BaseModel):

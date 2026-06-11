@@ -7,6 +7,7 @@ export function ContactSection({ title, description, onSubmit }) {
     message: '',
   });
   const [status, setStatus] = useState('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const updateField = (event) => {
     setFormData((current) => ({
@@ -18,13 +19,19 @@ export function ContactSection({ title, description, onSubmit }) {
   const submitForm = async (event) => {
     event.preventDefault();
     setStatus('sending');
+    setErrorMessage('');
 
     try {
       await onSubmit(formData);
       setStatus('sent');
       setFormData({ name: '', email: '', message: '' });
-    } catch {
+    } catch (error) {
       setStatus('error');
+      setErrorMessage(
+        error.status === 422
+          ? 'Revisa los datos del formulario.'
+          : 'No se pudo conectar con el backend.'
+      );
     }
   };
 
@@ -64,7 +71,7 @@ export function ContactSection({ title, description, onSubmit }) {
           <p className="form-status success">Mensaje enviado al backend FastAPI.</p>
         )}
         {status === 'error' && (
-          <p className="form-status error">No se pudo conectar con el backend.</p>
+          <p className="form-status error">{errorMessage}</p>
         )}
       </form>
     </section>
