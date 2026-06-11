@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function FeaturedProductsSection({ title, products }) {
   return (
     <section className="featured-products-section">

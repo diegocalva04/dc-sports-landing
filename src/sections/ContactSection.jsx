@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function ContactSection({ title, description }) {
   return (
     <section className="contact-section section-padding">

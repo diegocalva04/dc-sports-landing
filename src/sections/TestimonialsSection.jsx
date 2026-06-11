@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function TestimonialsSection({ title, testimonials }) {
   return (
     <section className="testimonials-section section-padding">

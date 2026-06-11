@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function FooterSection({ title, links, socialLinks }) {
   return (
     <footer className="footer-section">

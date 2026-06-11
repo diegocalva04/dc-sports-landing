@@ -1,16 +1,47 @@
-# React + Vite
+# DC Sports Landing
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Landing page built with React and Vite.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Build
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run build
+```
 
-## Expanding the ESLint configuration
+## Deploy to Google Cloud Run
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+This repository is ready to deploy as a container to Cloud Run. The included
+`cloudbuild.yaml` builds the Docker image and deploys the service on every Cloud
+Build trigger run.
+
+Default values:
+
+- Service: `dc-sports-landing`
+- Region: `us-central1`
+- Artifact Registry repository: `cloud-run`
+- Image: `$REGION-docker.pkg.dev/$PROJECT_ID/cloud-run/dc-sports-landing`
+
+One-time setup in Google Cloud:
+
+```bash
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+gcloud artifacts repositories create cloud-run --repository-format=docker --location=us-central1
+gcloud builds submit --config cloudbuild.yaml
+```
+
+For continuous deployment, create a Cloud Build trigger connected to this Git
+repository and set it to use `cloudbuild.yaml`.
+
+You can change the deployment target without editing the file by overriding
+substitutions in Cloud Build:
+
+```bash
+gcloud builds submit --config cloudbuild.yaml --substitutions=_REGION=us-east1,_SERVICE_NAME=dc-sports-landing
+```

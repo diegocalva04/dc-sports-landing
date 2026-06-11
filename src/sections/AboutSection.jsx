@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function AboutSection({ title, paragraphs, imageUrl }) {
   return (
     <section className="about-section section-padding">
