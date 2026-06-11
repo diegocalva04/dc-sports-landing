@@ -38,6 +38,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Validate Supabase secrets
+        run: |
+          set -euo pipefail
+
+          if [ -z "${{ secrets.SUPABASE_URL }}" ] || [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY GitHub Actions secret."
+            exit 1
+          fi
+
       - name: Create Lambda role if needed
         run: |
           set -euo pipefail
@@ -99,7 +108,8 @@ jobs:
               --runtime python3.12 \
               --handler app.main.handler \
               --timeout 15 \
-              --memory-size 256
+              --memory-size 256 \
+              --environment "Variables={SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}}"
           else
             aws lambda create-function \
               --function-name "$FUNCTION_NAME" \
@@ -108,7 +118,8 @@ jobs:
               --role "$ROLE_ARN" \
               --zip-file fileb://lambda.zip \
               --timeout 15 \
-              --memory-size 256
+              --memory-size 256 \
+              --environment "Variables={SUPABASE_URL=${{ secrets.SUPABASE_URL }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}}"
 
             aws lambda wait function-active --function-name "$FUNCTION_NAME"
           fi

@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from mangum import Mangum
 from pydantic import BaseModel, EmailStr, Field
 
+from app.supabase_client import save_contact_message
+
 
 app = FastAPI(
     title="DC Sports API",
@@ -45,6 +47,7 @@ class ContactResponse(BaseModel):
     status: str
     message: str
     received_at: datetime
+    record_id: str | None = None
 
 
 PRODUCTS = [
@@ -104,10 +107,13 @@ def get_product(product_id: int):
 
 @app.post("/api/contact", response_model=ContactResponse, status_code=status.HTTP_201_CREATED)
 def create_contact_message(payload: ContactRequest):
+    saved_record = save_contact_message(payload)
+
     return ContactResponse(
         status="received",
-        message=f"Thanks {payload.name}, we will contact you soon.",
-        received_at=datetime.now(timezone.utc),
+        message=f"Thanks {payload.name}, your message was saved.",
+        received_at=datetime.fromisoformat(saved_record["created_at"].replace("Z", "+00:00")),
+        record_id=str(saved_record.get("id")) if saved_record.get("id") else None,
     )
 
 

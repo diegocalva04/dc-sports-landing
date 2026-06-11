@@ -45,6 +45,14 @@ Required GitHub Actions secrets for the AWS backend:
 The AWS user behind those keys must be allowed to manage Lambda functions, IAM
 roles for Lambda, and CloudWatch logs.
 
+Required GitHub Actions secrets for contact-form storage in Supabase:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Create the Supabase table by running `backend/supabase_schema.sql` in the
+Supabase SQL editor before deploying the backend.
+
 To connect the deployed frontend with this backend, add this GitHub Actions
 secret to the repository:
 

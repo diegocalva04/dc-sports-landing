@@ -29,3 +29,15 @@ http://localhost:8000/docs
 
 The application exposes `app.main.handler` through Mangum, so it can run on AWS
 Lambda behind a public Lambda Function URL.
+
+## Supabase
+
+The contact form is stored in Supabase through the backend. Run
+`supabase_schema.sql` in the Supabase SQL editor, then set these GitHub Actions
+secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+Use the service role key only in the backend deployment. Do not expose it in the
+React frontend.
