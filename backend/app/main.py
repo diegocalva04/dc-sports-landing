@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 from typing import Annotated
 
@@ -15,17 +16,18 @@ app = FastAPI(
     description="Backend service for the DC Sports landing page.",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://dc-sports-landing-458217573676.us-central1.run.app",
-        "https://dc-sports-landing-esvbzutesq-uc.a.run.app",
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
-)
+if not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:5173",
+            "https://dc-sports-landing-458217573676.us-central1.run.app",
+            "https://dc-sports-landing-esvbzutesq-uc.a.run.app",
+        ],
+        allow_credentials=True,
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
 
 
 class Product(BaseModel):
