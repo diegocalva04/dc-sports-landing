@@ -120,7 +120,7 @@ jobs:
             aws lambda create-function-url-config \
               --function-name "$FUNCTION_NAME" \
               --auth-type NONE \
-              --cors AllowOrigins='*',AllowMethods='GET,POST,OPTIONS',AllowHeaders='*'
+              --cors AllowOrigins='*',AllowMethods='GET,POST',AllowHeaders='*'
           fi
 
           aws lambda add-permission \
