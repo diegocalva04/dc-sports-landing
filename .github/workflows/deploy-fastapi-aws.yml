@@ -10,9 +10,10 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_REGION: us-east-1
   FUNCTION_NAME: dc-sports-fastapi-backend
   ROLE_NAME: dc-sports-fastapi-lambda-role
+  FRONTEND_ORIGIN: https://dc-sports-landing-esvbzutesq-uc.a.run.app
 
 jobs:
   deploy:
@@ -120,8 +121,17 @@ jobs:
             aws lambda create-function-url-config \
               --function-name "$FUNCTION_NAME" \
               --auth-type NONE \
-              --cors AllowOrigins='*',AllowMethods='GET,POST',AllowHeaders='*'
+              --cors AllowOrigins="$FRONTEND_ORIGIN",AllowMethods='GET,POST',AllowHeaders='*'
+          else
+            aws lambda update-function-url-config \
+              --function-name "$FUNCTION_NAME" \
+              --auth-type NONE \
+              --cors AllowOrigins="$FRONTEND_ORIGIN",AllowMethods='GET,POST',AllowHeaders='*'
           fi
+
+          aws lambda remove-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id FunctionUrlPublicAccess >/dev/null 2>&1 || true
 
           aws lambda add-permission \
             --function-name "$FUNCTION_NAME" \

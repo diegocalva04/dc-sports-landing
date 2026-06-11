@@ -41,7 +41,6 @@ Required GitHub Actions secrets for the AWS backend:
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
-- `AWS_REGION` such as `us-east-1`
 
 The AWS user behind those keys must be allowed to manage Lambda functions, IAM
 roles for Lambda, and CloudWatch logs.

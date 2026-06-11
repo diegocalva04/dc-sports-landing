@@ -17,6 +17,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "https://dc-sports-landing-458217573676.us-central1.run.app",
         "https://dc-sports-landing-esvbzutesq-uc.a.run.app",
     ],
     allow_credentials=True,
