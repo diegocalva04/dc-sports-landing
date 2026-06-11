@@ -1,0 +1,136 @@
+name: Deploy FastAPI Backend to AWS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - .github/workflows/deploy-fastapi-aws.yml
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  FUNCTION_NAME: dc-sports-fastapi-backend
+  ROLE_NAME: dc-sports-fastapi-lambda-role
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create Lambda role if needed
+        run: |
+          set -euo pipefail
+
+          if ! aws iam get-role --role-name "$ROLE_NAME" >/dev/null 2>&1; then
+            cat > trust-policy.json <<'JSON'
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "lambda.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          }
+          JSON
+
+            aws iam create-role \
+              --role-name "$ROLE_NAME" \
+              --assume-role-policy-document file://trust-policy.json
+
+            aws iam attach-role-policy \
+              --role-name "$ROLE_NAME" \
+              --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+            sleep 20
+          fi
+
+      - name: Package backend
+        run: |
+          set -euo pipefail
+          rm -rf build lambda.zip
+          mkdir build
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt --target build
+          cp -r backend/app build/app
+          cd build
+          zip -r ../lambda.zip .
+
+      - name: Deploy Lambda
+        run: |
+          set -euo pipefail
+
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ROLE_ARN="arn:aws:iam::$ACCOUNT_ID:role/$ROLE_NAME"
+
+          if aws lambda get-function --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --zip-file fileb://lambda.zip
+
+            aws lambda wait function-updated --function-name "$FUNCTION_NAME"
+
+            aws lambda update-function-configuration \
+              --function-name "$FUNCTION_NAME" \
+              --runtime python3.12 \
+              --handler app.main.handler \
+              --timeout 15 \
+              --memory-size 256
+          else
+            aws lambda create-function \
+              --function-name "$FUNCTION_NAME" \
+              --runtime python3.12 \
+              --handler app.main.handler \
+              --role "$ROLE_ARN" \
+              --zip-file fileb://lambda.zip \
+              --timeout 15 \
+              --memory-size 256
+
+            aws lambda wait function-active --function-name "$FUNCTION_NAME"
+          fi
+
+      - name: Ensure public function URL
+        run: |
+          set -euo pipefail
+
+          if ! aws lambda get-function-url-config --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            aws lambda create-function-url-config \
+              --function-name "$FUNCTION_NAME" \
+              --auth-type NONE \
+              --cors AllowOrigins='*',AllowMethods='GET,POST,OPTIONS',AllowHeaders='*'
+          fi
+
+          aws lambda add-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id FunctionUrlPublicAccess \
+            --action lambda:InvokeFunctionUrl \
+            --principal "*" \
+            --function-url-auth-type NONE >/dev/null 2>&1 || true
+
+          aws lambda get-function-url-config \
+            --function-name "$FUNCTION_NAME" \
+            --query FunctionUrl \
+            --output text

@@ -13,6 +13,10 @@ dist
 .gcloud-tmp
 .tmp
 .secrets
+backend/.venv
+backend/.venv313
+backend/.deps
+backend/.pip-tmp
 dist-ssr
 *.local
 

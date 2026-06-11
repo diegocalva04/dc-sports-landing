@@ -15,6 +15,37 @@ npm run dev
 npm run build
 ```
 
+## FastAPI Backend
+
+The backend lives in `backend/` and exposes a small API for products, contact
+messages, and health checks.
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+Open the API docs at:
+
+```text
+http://localhost:8000/docs
+```
+
+The GitHub Actions workflow `.github/workflows/deploy-fastapi-aws.yml` deploys
+this backend to AWS Lambda when files under `backend/` change.
+
+Required GitHub Actions secrets for the AWS backend:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION` such as `us-east-1`
+
+The AWS user behind those keys must be allowed to manage Lambda functions, IAM
+roles for Lambda, and CloudWatch logs.
+
 ## Deploy to Google Cloud Run
 
 This repository is ready to deploy as a container to Cloud Run. The included
