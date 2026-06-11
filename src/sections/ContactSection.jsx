@@ -9,12 +9,25 @@ export function ContactSection({ title, description, onSubmit }) {
   const [status, setStatus] = useState('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const hasValidEmailFormat = (email) => {
+    const trimmedEmail = email.trim();
+    const atIndex = trimmedEmail.indexOf('@');
+    const lastDotIndex = trimmedEmail.lastIndexOf('.');
+
+    return (
+      atIndex > 0
+      && lastDotIndex > atIndex + 1
+      && lastDotIndex < trimmedEmail.length - 1
+      && !trimmedEmail.includes(' ')
+    );
+  };
+
   const validateForm = () => {
     if (formData.name.trim().length < 2) {
       return 'Escribe tu nombre con al menos 2 caracteres.';
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    if (!hasValidEmailFormat(formData.email)) {
       return 'Escribe un correo valido, por ejemplo nombre@correo.com.';
     }
 
