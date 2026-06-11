@@ -18,14 +18,12 @@ async function request(path, options = {}) {
   });
 
   if (!response.ok) {
-    let detail = `API request failed with status ${response.status}.`;
-
-    try {
-      const errorBody = await response.json();
-      detail = errorBody.detail || detail;
-    } catch {
-      // Keep the generic message when the response is not JSON.
-    }
+    const fallbackMessage = `API request failed with status ${response.status}.`;
+    const contentType = response.headers.get('content-type') || '';
+    const errorBody = contentType.includes('application/json')
+      ? await response.json()
+      : {};
+    const detail = errorBody.detail || fallbackMessage;
 
     const error = new Error(Array.isArray(detail) ? 'Invalid form data.' : detail);
     error.status = response.status;
