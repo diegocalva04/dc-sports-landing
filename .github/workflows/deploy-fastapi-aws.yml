@@ -14,6 +14,7 @@ env:
   FUNCTION_NAME: dc-sports-fastapi-backend
   ROLE_NAME: dc-sports-fastapi-lambda-role
   FRONTEND_ORIGIN: https://dc-sports-landing-esvbzutesq-uc.a.run.app
+  FRONTEND_STABLE_ORIGIN: https://dc-sports-landing-458217573676.us-central1.run.app
 
 jobs:
   deploy:
@@ -128,16 +129,33 @@ jobs:
         run: |
           set -euo pipefail
 
+          cat > function-url-cors.json <<JSON
+          {
+            "AllowOrigins": [
+              "$FRONTEND_ORIGIN",
+              "$FRONTEND_STABLE_ORIGIN"
+            ],
+            "AllowMethods": [
+              "GET",
+              "POST"
+            ],
+            "AllowHeaders": [
+              "content-type"
+            ],
+            "MaxAge": 86400
+          }
+          JSON
+
           if ! aws lambda get-function-url-config --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
             aws lambda create-function-url-config \
               --function-name "$FUNCTION_NAME" \
               --auth-type NONE \
-              --cors AllowOrigins="$FRONTEND_ORIGIN",AllowMethods='GET,POST',AllowHeaders='*'
+              --cors file://function-url-cors.json
           else
             aws lambda update-function-url-config \
               --function-name "$FUNCTION_NAME" \
               --auth-type NONE \
-              --cors AllowOrigins="$FRONTEND_ORIGIN",AllowMethods='GET,POST',AllowHeaders='*'
+              --cors file://function-url-cors.json
           fi
 
           aws lambda remove-permission \
