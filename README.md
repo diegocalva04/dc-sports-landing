@@ -59,15 +59,15 @@ secret to the repository:
 - `VITE_API_BASE_URL`: the public AWS Lambda Function URL printed by the AWS
   backend workflow.
 
-After setting `VITE_API_BASE_URL`, run the AWS Amplify frontend workflow again
+After setting `VITE_API_BASE_URL`, run the AWS Lambda frontend workflow again
 so the React build includes the backend URL.
 
 ## Deploy the frontend to AWS
 
 The GitHub Actions workflow `.github/workflows/deploy-frontend-aws.yml` builds
-the React application and deploys it to AWS Amplify Hosting whenever frontend
-files change on `main`. It creates the Amplify application and production
-branch on the first run, then reuses them for later deployments.
+the React application and deploys it to a public AWS Lambda Function URL
+whenever frontend files change on `main`. It creates the Lambda function on the
+first run, then updates it for later deployments.
 
 Required GitHub Actions secrets:
 
@@ -76,8 +76,8 @@ Required GitHub Actions secrets:
 - `AWS_REGION`
 - `VITE_API_BASE_URL`
 
-The AWS identity behind those keys must be allowed to manage Amplify
-applications and deployments.
+The AWS identity behind those keys must be allowed to manage Lambda functions
+and the Lambda execution role.
 
 Netlify remains independent of this workflow and can continue deploying from
 the repository as configured in the Netlify account.

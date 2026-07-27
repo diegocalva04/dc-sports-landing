@@ -1,4 +1,4 @@
-name: Deploy Frontend to AWS Amplify
+name: Deploy Frontend to AWS Lambda
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - src/**
       - public/**
+      - aws/frontend/**
       - index.html
       - package.json
       - package-lock.json
@@ -16,8 +17,8 @@ on:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
-  AMPLIFY_APP_NAME: dc-sports-landing
-  AMPLIFY_BRANCH_NAME: main
+  FUNCTION_NAME: dc-sports-landing-frontend
+  ROLE_NAME: dc-sports-fastapi-lambda-role
 
 jobs:
   deploy:
@@ -43,102 +44,121 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Build frontend
+      - name: Build and package frontend
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: |
+          set -euo pipefail
           npm ci
           npm run build
-          cd dist
-          zip -r ../deployment.zip .
+          mkdir package
+          cp aws/frontend/handler.mjs package/handler.mjs
+          cp -r dist package/dist
+          cd package
+          zip -r ../frontend.zip .
 
-      - name: Create or reuse Amplify app
-        id: amplify
+      - name: Deploy Lambda
         run: |
           set -euo pipefail
 
-          APP_ID=$(aws amplify list-apps \
-            --query "apps[?name=='$AMPLIFY_APP_NAME'].appId | [0]" \
-            --output text)
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ROLE_ARN="arn:aws:iam::$ACCOUNT_ID:role/$ROLE_NAME"
 
-          if [ -z "$APP_ID" ] || [ "$APP_ID" = "None" ]; then
-            APP_ID=$(aws amplify create-app \
-              --name "$AMPLIFY_APP_NAME" \
-              --platform WEB \
-              --query app.appId \
-              --output text)
+          if aws lambda get-function \
+            --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --zip-file fileb://frontend.zip >/dev/null
+
+            aws lambda wait function-updated \
+              --function-name "$FUNCTION_NAME"
+
+            aws lambda update-function-configuration \
+              --function-name "$FUNCTION_NAME" \
+              --runtime nodejs22.x \
+              --handler handler.handler \
+              --timeout 10 \
+              --memory-size 256 >/dev/null
+          else
+            aws lambda create-function \
+              --function-name "$FUNCTION_NAME" \
+              --runtime nodejs22.x \
+              --handler handler.handler \
+              --role "$ROLE_ARN" \
+              --zip-file fileb://frontend.zip \
+              --timeout 10 \
+              --memory-size 256 >/dev/null
+
+            aws lambda wait function-active \
+              --function-name "$FUNCTION_NAME"
           fi
 
-          if ! aws amplify get-branch \
-            --app-id "$APP_ID" \
-            --branch-name "$AMPLIFY_BRANCH_NAME" >/dev/null 2>&1; then
-            aws amplify create-branch \
-              --app-id "$APP_ID" \
-              --branch-name "$AMPLIFY_BRANCH_NAME" \
-              --stage PRODUCTION \
-              --no-enable-auto-build >/dev/null
+          aws lambda wait function-updated \
+            --function-name "$FUNCTION_NAME"
+
+      - name: Ensure public function URL
+        id: function-url
+        run: |
+          set -euo pipefail
+
+          if ! aws lambda get-function-url-config \
+            --function-name "$FUNCTION_NAME" >/dev/null 2>&1; then
+            aws lambda create-function-url-config \
+              --function-name "$FUNCTION_NAME" \
+              --auth-type NONE >/dev/null
+          else
+            aws lambda update-function-url-config \
+              --function-name "$FUNCTION_NAME" \
+              --auth-type NONE >/dev/null
           fi
 
-          DEFAULT_DOMAIN=$(aws amplify get-app \
-            --app-id "$APP_ID" \
-            --query app.defaultDomain \
+          aws lambda remove-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id FunctionUrlPublicAccess >/dev/null 2>&1 || true
+
+          aws lambda add-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id FunctionUrlPublicAccess \
+            --action lambda:InvokeFunctionUrl \
+            --principal "*" \
+            --function-url-auth-type NONE >/dev/null
+
+          aws lambda remove-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id FunctionUrlPublicInvokeAccess >/dev/null 2>&1 || true
+
+          aws lambda add-permission \
+            --function-name "$FUNCTION_NAME" \
+            --statement-id FunctionUrlPublicInvokeAccess \
+            --action lambda:InvokeFunction \
+            --principal "*" \
+            --invoked-via-function-url >/dev/null
+
+          SITE_URL=$(aws lambda get-function-url-config \
+            --function-name "$FUNCTION_NAME" \
+            --query FunctionUrl \
             --output text)
 
-          echo "app-id=$APP_ID" >> "$GITHUB_OUTPUT"
-          echo "site-url=https://$AMPLIFY_BRANCH_NAME.$DEFAULT_DOMAIN" >> "$GITHUB_OUTPUT"
+          echo "site-url=$SITE_URL" >> "$GITHUB_OUTPUT"
 
-      - name: Upload and deploy
-        id: deploy
+      - name: Verify deployment
         env:
-          APP_ID: ${{ steps.amplify.outputs.app-id }}
+          SITE_URL: ${{ steps.function-url.outputs.site-url }}
         run: |
           set -euo pipefail
 
-          DEPLOYMENT=$(aws amplify create-deployment \
-            --app-id "$APP_ID" \
-            --branch-name "$AMPLIFY_BRANCH_NAME")
+          for attempt in {1..12}; do
+            STATUS=$(curl --silent --output /dev/null \
+              --write-out "%{http_code}" "$SITE_URL")
 
-          JOB_ID=$(jq -r .jobId <<< "$DEPLOYMENT")
-          ZIP_UPLOAD_URL=$(jq -r .zipUploadUrl <<< "$DEPLOYMENT")
+            if [ "$STATUS" = "200" ]; then
+              echo "### AWS Lambda deployment" >> "$GITHUB_STEP_SUMMARY"
+              echo "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
 
-          curl --fail --silent --show-error \
-            --request PUT \
-            --upload-file deployment.zip \
-            "$ZIP_UPLOAD_URL"
-
-          aws amplify start-deployment \
-            --app-id "$APP_ID" \
-            --branch-name "$AMPLIFY_BRANCH_NAME" \
-            --job-id "$JOB_ID" >/dev/null
-
-          for attempt in {1..60}; do
-            STATUS=$(aws amplify get-job \
-              --app-id "$APP_ID" \
-              --branch-name "$AMPLIFY_BRANCH_NAME" \
-              --job-id "$JOB_ID" \
-              --query job.summary.status \
-              --output text)
-
-            case "$STATUS" in
-              SUCCEED)
-                echo "status=$STATUS" >> "$GITHUB_OUTPUT"
-                exit 0
-                ;;
-              FAILED|CANCELLED)
-                echo "Amplify deployment ended with status $STATUS."
-                exit 1
-                ;;
-            esac
-
-            sleep 10
+            sleep 5
           done
 
-          echo "Timed out waiting for the Amplify deployment."
+          echo "The deployed frontend did not return HTTP 200."
           exit 1
-
-      - name: Publish deployment URL
-        env:
-          SITE_URL: ${{ steps.amplify.outputs.site-url }}
-        run: |
-          echo "### AWS Amplify deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
