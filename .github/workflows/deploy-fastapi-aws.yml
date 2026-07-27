@@ -13,8 +13,6 @@ env:
   AWS_REGION: us-east-1
   FUNCTION_NAME: dc-sports-fastapi-backend
   ROLE_NAME: dc-sports-fastapi-lambda-role
-  FRONTEND_ORIGIN: https://dc-sports-landing-esvbzutesq-uc.a.run.app
-  FRONTEND_STABLE_ORIGIN: https://dc-sports-landing-458217573676.us-central1.run.app
 
 jobs:
   deploy:
@@ -138,8 +136,7 @@ jobs:
           cat > function-url-cors.json <<JSON
           {
             "AllowOrigins": [
-              "$FRONTEND_ORIGIN",
-              "$FRONTEND_STABLE_ORIGIN"
+              "*"
             ],
             "AllowMethods": [
               "GET",

@@ -9,7 +9,6 @@ export default defineConfig([
     'dist',
     'backend',
     '.docker-tmp',
-    '.gcloud-tmp',
     '.tmp',
     '.secrets',
   ]),

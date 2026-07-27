@@ -59,36 +59,25 @@ secret to the repository:
 - `VITE_API_BASE_URL`: the public AWS Lambda Function URL printed by the AWS
   backend workflow.
 
-After setting `VITE_API_BASE_URL`, run the Cloud Run frontend workflow again so
-the React build includes the backend URL.
+After setting `VITE_API_BASE_URL`, run the AWS Amplify frontend workflow again
+so the React build includes the backend URL.
 
-## Deploy to Google Cloud Run
+## Deploy the frontend to AWS
 
-This repository is ready to deploy as a container to Cloud Run. The included
-`cloudbuild.yaml` builds the Docker image and deploys the service on every Cloud
-Build trigger run.
+The GitHub Actions workflow `.github/workflows/deploy-frontend-aws.yml` builds
+the React application and deploys it to AWS Amplify Hosting whenever frontend
+files change on `main`. It creates the Amplify application and production
+branch on the first run, then reuses them for later deployments.
 
-Default values:
+Required GitHub Actions secrets:
 
-- Service: `dc-sports-landing`
-- Region: `us-central1`
-- Artifact Registry repository: `cloud-run`
-- Image: `$REGION-docker.pkg.dev/$PROJECT_ID/cloud-run/dc-sports-landing`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `VITE_API_BASE_URL`
 
-One-time setup in Google Cloud:
+The AWS identity behind those keys must be allowed to manage Amplify
+applications and deployments.
 
-```bash
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-gcloud artifacts repositories create cloud-run --repository-format=docker --location=us-central1
-gcloud builds submit --config cloudbuild.yaml
-```
-
-For continuous deployment, create a Cloud Build trigger connected to this Git
-repository and set it to use `cloudbuild.yaml`.
-
-You can change the deployment target without editing the file by overriding
-substitutions in Cloud Build:
-
-```bash
-gcloud builds submit --config cloudbuild.yaml --substitutions=_REGION=us-east1,_SERVICE_NAME=dc-sports-landing
-```
+Netlify remains independent of this workflow and can continue deploying from
+the repository as configured in the Netlify account.

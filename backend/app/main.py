@@ -17,13 +17,18 @@ app = FastAPI(
 )
 
 if not os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    frontend_origins = [
+        origin.strip()
+        for origin in os.getenv(
+            "FRONTEND_ORIGINS",
+            "http://localhost:5173",
+        ).split(",")
+        if origin.strip()
+    ]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",
-            "https://dc-sports-landing-458217573676.us-central1.run.app",
-            "https://dc-sports-landing-esvbzutesq-uc.a.run.app",
-        ],
+        allow_origins=frontend_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST"],
         allow_headers=["*"],

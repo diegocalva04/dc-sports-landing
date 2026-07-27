@@ -1,0 +1,144 @@
+name: Deploy Frontend to AWS Amplify
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/**
+      - public/**
+      - index.html
+      - package.json
+      - package-lock.json
+      - vite.config.js
+      - .github/workflows/deploy-frontend-aws.yml
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+  AMPLIFY_APP_NAME: dc-sports-landing
+  AMPLIFY_BRANCH_NAME: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build frontend
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+        run: |
+          npm ci
+          npm run build
+          cd dist
+          zip -r ../deployment.zip .
+
+      - name: Create or reuse Amplify app
+        id: amplify
+        run: |
+          set -euo pipefail
+
+          APP_ID=$(aws amplify list-apps \
+            --query "apps[?name=='$AMPLIFY_APP_NAME'].appId | [0]" \
+            --output text)
+
+          if [ -z "$APP_ID" ] || [ "$APP_ID" = "None" ]; then
+            APP_ID=$(aws amplify create-app \
+              --name "$AMPLIFY_APP_NAME" \
+              --platform WEB \
+              --query app.appId \
+              --output text)
+          fi
+
+          if ! aws amplify get-branch \
+            --app-id "$APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH_NAME" >/dev/null 2>&1; then
+            aws amplify create-branch \
+              --app-id "$APP_ID" \
+              --branch-name "$AMPLIFY_BRANCH_NAME" \
+              --stage PRODUCTION \
+              --no-enable-auto-build >/dev/null
+          fi
+
+          DEFAULT_DOMAIN=$(aws amplify get-app \
+            --app-id "$APP_ID" \
+            --query app.defaultDomain \
+            --output text)
+
+          echo "app-id=$APP_ID" >> "$GITHUB_OUTPUT"
+          echo "site-url=https://$AMPLIFY_BRANCH_NAME.$DEFAULT_DOMAIN" >> "$GITHUB_OUTPUT"
+
+      - name: Upload and deploy
+        id: deploy
+        env:
+          APP_ID: ${{ steps.amplify.outputs.app-id }}
+        run: |
+          set -euo pipefail
+
+          DEPLOYMENT=$(aws amplify create-deployment \
+            --app-id "$APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH_NAME")
+
+          JOB_ID=$(jq -r .jobId <<< "$DEPLOYMENT")
+          ZIP_UPLOAD_URL=$(jq -r .zipUploadUrl <<< "$DEPLOYMENT")
+
+          curl --fail --silent --show-error \
+            --request PUT \
+            --upload-file deployment.zip \
+            "$ZIP_UPLOAD_URL"
+
+          aws amplify start-deployment \
+            --app-id "$APP_ID" \
+            --branch-name "$AMPLIFY_BRANCH_NAME" \
+            --job-id "$JOB_ID" >/dev/null
+
+          for attempt in {1..60}; do
+            STATUS=$(aws amplify get-job \
+              --app-id "$APP_ID" \
+              --branch-name "$AMPLIFY_BRANCH_NAME" \
+              --job-id "$JOB_ID" \
+              --query job.summary.status \
+              --output text)
+
+            case "$STATUS" in
+              SUCCEED)
+                echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+              FAILED|CANCELLED)
+                echo "Amplify deployment ended with status $STATUS."
+                exit 1
+                ;;
+            esac
+
+            sleep 10
+          done
+
+          echo "Timed out waiting for the Amplify deployment."
+          exit 1
+
+      - name: Publish deployment URL
+        env:
+          SITE_URL: ${{ steps.amplify.outputs.site-url }}
+        run: |
+          echo "### AWS Amplify deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "$SITE_URL" >> "$GITHUB_STEP_SUMMARY"
